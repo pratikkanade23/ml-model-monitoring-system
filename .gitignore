@@ -27,3 +27,7 @@ Thumbs.db
 
 # Temporary files
 *.tmp
+
+# Dataset files
+data/raw/*.csv
+data/processed/*.csv
