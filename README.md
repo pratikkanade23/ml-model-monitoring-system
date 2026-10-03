@@ -1,119 +1,48 @@
 # ML Model Monitoring & Automated Retraining System
 
-An end-to-end machine learning monitoring system designed to detect
-data drift, prediction drift, and model performance degradation in
-deployed machine learning models.
+An end-to-end machine learning monitoring system that detects data drift, prediction drift, and model performance changes in production data. The system evaluates whether a model should be retrained and only promotes a retrained model when it performs better than the current production model.
 
-## Project Overview
+## 🚀 Project Overview
 
-Machine learning models can become less reliable when real-world
-data changes after deployment.
+Machine learning models can lose reliability after deployment when production data changes over time.
 
-This project simulates a production ML environment and provides
-automated monitoring for:
+This project simulates a production environment and builds an automated monitoring pipeline that:
 
-- Data Drift
-- Prediction Drift
-- Model Performance Degradation
-- Model Retraining
+- Detects data drift
+- Detects prediction drift
+- Monitors model performance
+- Retrains the model using production data
+- Compares the current and retrained models
+- Decides whether the retrained model should be promoted
+- Maintains a model registry
+- Provides a Streamlit monitoring dashboard
 
-## System Architecture
-
-Training Data
-     |
-     v
-Data Preprocessing
-     |
-     v
-Model Training
-     |
-     v
-Trained ML Model
-     |
-     v
-Production Data
-     |
-     v
-Monitoring System
-     |
-     +-------------------+
-     |                   |
-     v                   v
-Data Drift         Prediction Drift
-     |                   |
-     +---------+---------+
-               |
-               v
-       Performance Monitoring
-               |
-               v
-        Drift / Degradation
-               |
-          +----+----+
-          |         |
-         NO        YES
-          |         |
-          v         v
-       Continue   Retrain
-                    |
-                    v
-              New Model
-                    |
-                    v
-              Model Evaluation
-
-## Key Features
-
-- Machine learning model training
-- Production data simulation
-- Statistical data drift detection
-- Kolmogorov-Smirnov (KS) test
-- Population Stability Index (PSI)
-- Prediction drift monitoring
-- Model performance monitoring
-- Automated retraining trigger
-- Model versioning
-- Interactive monitoring dashboard
-- REST API
-- Docker support
-
-## Technologies
-
-- Python
-- Pandas
-- NumPy
-- Scikit-learn
-- SciPy
-- XGBoost
-- Matplotlib
-- Plotly
-- Streamlit
-- FastAPI
-- Git
-- GitHub
-- Docker
-
-## Project Structure
+## 🏗️ System Architecture
 
 ```text
-ML-Model-Monitoring-System/
-│
-├── data/
-│   ├── raw/
-│   └── processed/
-│
-├── notebooks/
-│
-├── src/
-│
-├── models/
-│
-├── app/
-│
-├── tests/
-│
-├── logs/
-│
-├── .gitignore
-├── README.md
-└── requirements.txt
+Training Data
+      ↓
+Data Preprocessing
+      ↓
+Model Training
+      ↓
+Production Model
+      ↓
+Production Data
+      ↓
+Monitoring
+ ┌────┼───────────────┐
+ ↓    ↓               ↓
+Data  Prediction      Performance
+Drift Drift           Monitoring
+ └────┼───────────────┘
+      ↓
+Retraining Decision
+      ↓
+Candidate Model
+      ↓
+Model Comparison
+      ↓
+Promotion Decision
+      ↓
+Model Registry

@@ -1,43 +1,37 @@
-import joblib
+import json
+import os
+
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 
-DATA_PATH = "data/processed/cleaned_data.csv"
+PRODUCTION_DATA_PATH = "data/processed/production_data.csv"
+BASELINE_DATA_PATH = "data/processed/cleaned_data.csv"
+REPORT_PATH = "models/prediction_drift_report.json"
 
-MODEL_PATH = "models/churn_model.pkl"
-PREPROCESSOR_PATH = "models/preprocessor.pkl"
+PREDICTION_DRIFT_THRESHOLD = 0.05
 
 
-def calculate_churn_rate(model, preprocessor, df):
-    """Calculate the percentage of records predicted as churn."""
-
-    X = df.drop(columns=["Churn"])
-
+def calculate_prediction_rate(model, preprocessor, X):
     X_processed = preprocessor.transform(X)
-
     predictions = model.predict(X_processed)
 
-    churn_rate = (predictions == 1).mean()
-
-    return churn_rate
+    return predictions.mean()
 
 
 if __name__ == "__main__":
 
-    print("Loading baseline data...")
+    print("Loading data and model...")
 
-    df = pd.read_csv(DATA_PATH)
+    production_df = pd.read_csv(PRODUCTION_DATA_PATH)
+    baseline_df = pd.read_csv(BASELINE_DATA_PATH)
 
-    model = joblib.load(MODEL_PATH)
-    preprocessor = joblib.load(PREPROCESSOR_PATH)
+    # Separate features and target
+    X = baseline_df.drop(columns=["Churn"])
+    y = baseline_df["Churn"]
 
-    # Use the same test split logic as our baseline
-    from sklearn.model_selection import train_test_split
-
-    X = df.drop(columns=["Churn"])
-    y = df["Churn"]
-
-    X_train, X_test, y_train, y_test = train_test_split(
+    # Recreate baseline test split
+    _, X_test, _, _ = train_test_split(
         X,
         y,
         test_size=0.2,
@@ -45,57 +39,78 @@ if __name__ == "__main__":
         stratify=y
     )
 
-    baseline_df = X_test.copy()
-    baseline_df["Churn"] = y_test
+    # Load model and preprocessor
+    import joblib
 
-    # Load production data
-    production_df = pd.read_csv(
-        "data/processed/production_data.csv"
-    )
+    model = joblib.load("models/churn_model.pkl")
+    preprocessor = joblib.load("models/preprocessor.pkl")
 
-    baseline_churn_rate = calculate_churn_rate(
+    # Baseline predictions
+    baseline_rate = calculate_prediction_rate(
         model,
         preprocessor,
-        baseline_df
+        X_test
     )
 
-    production_churn_rate = calculate_churn_rate(
+    # Production predictions
+    production_X = production_df.drop(columns=["Churn"])
+
+    production_rate = calculate_prediction_rate(
         model,
         preprocessor,
-        production_df
+        production_X
     )
 
     difference = abs(
-        production_churn_rate - baseline_churn_rate
+        production_rate - baseline_rate
     )
 
-    threshold = 0.05
+    drift_detected = (
+        difference >= PREDICTION_DRIFT_THRESHOLD
+    )
 
-    drift_detected = difference > threshold
+    status = "DRIFT" if drift_detected else "NO DRIFT"
 
     print("\n========== PREDICTION DRIFT ==========")
 
     print(
-        f"Baseline churn rate    : "
-        f"{baseline_churn_rate:.2%}"
+        f"Baseline prediction rate   : "
+        f"{baseline_rate:.2%}"
     )
 
     print(
-        f"Production churn rate  : "
-        f"{production_churn_rate:.2%}"
+        f"Production prediction rate : "
+        f"{production_rate:.2%}"
     )
 
     print(
-        f"Difference             : "
+        f"Difference                  : "
         f"{difference:.2%}"
     )
 
     print(
-        f"Threshold              : "
-        f"{threshold:.2%}"
+        f"Threshold                   : "
+        f"{PREDICTION_DRIFT_THRESHOLD:.2%}"
     )
 
-    if drift_detected:
-        print("Status                 : DRIFT DETECTED")
-    else:
-        print("Status                 : NO DRIFT")
+    print(f"Status                      : {status}")
+
+    # Save report
+    report = {
+    "baseline_prediction_rate": float(baseline_rate),
+    "production_prediction_rate": float(production_rate),
+    "difference": float(difference),
+    "threshold": float(PREDICTION_DRIFT_THRESHOLD),
+    "drift_detected": bool(drift_detected),
+    "status": status
+    }
+
+    os.makedirs("models", exist_ok=True)
+
+    with open(REPORT_PATH, "w") as file:
+        json.dump(report, file, indent=4)
+
+    print(
+        f"\nPrediction drift report saved to: "
+        f"{REPORT_PATH}"
+    )

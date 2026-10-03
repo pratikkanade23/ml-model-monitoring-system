@@ -1,0 +1,8 @@
+{
+    "baseline_prediction_rate": 0.232409381663113,
+    "production_prediction_rate": 0.229,
+    "difference": 0.003409381663112998,
+    "threshold": 0.05,
+    "drift_detected": false,
+    "status": "NO DRIFT"
+}
